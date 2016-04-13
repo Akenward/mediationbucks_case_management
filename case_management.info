@@ -1,0 +1,17 @@
+name = Case management
+description = Module providing structure for mediation case management.
+
+files[] = case_management.install
+files[] = includes/mediation_taxonomy_handler.inc
+files[] = includes/case_management_taxonomy.inc
+
+dependencies[] = pathauto
+dependencies[] = token
+dependencies[] = entity
+dependencies[] = date
+dependencies[] = ctools
+dependencies[] = entityreference
+dependencies[] = inline_entity_form
+
+core = 7.x
+version = 7.x-0.1-dev

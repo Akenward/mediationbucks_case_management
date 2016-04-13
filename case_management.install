@@ -1,0 +1,16 @@
+<?php
+
+function case_management_install() {
+  $loader = case_management_taxonomy_loader_factory();
+  $loader->setUpVocabs();
+}
+
+function case_management_uninstall() {
+  module_load_include('module', 'case_management', 'case_management');
+  $remover = case_management_taxonomy_loader_factory();
+  $remover->removeVocabs();
+}
+
+
+  
+  

@@ -1,0 +1,187 @@
+<?php
+
+/**
+ * Implements hook_permission().
+ */
+ function case_management_permission(){
+    return array(
+    'administer case_management nodes' =>  array(
+      'title' => t('Administer case_management records'),
+      'restrict access' => TRUE,
+    ),
+    'access case_management nodes' => array(
+      'title' => t('Access case_management records'),
+    ),
+  );
+}
+ 
+/**
+ * Implements hook_menu to provide a path to a test function for debugging.
+ */ 
+function case_management_menu() {
+  $items = array();
+  
+  $items['test-it'] = array(
+    'title' => t('Test driver'),
+    'description' => t('Run a test'),
+    'page callback' => 'case_management_test',
+    'page arguments' => array(),
+    'access arguments' => array('access case_management nodes'),
+  );
+  
+  return($items);
+}
+
+/**
+ * Implements hook_form to make allow nodes to appear in under "content types"
+ * in config menu.
+ */ 
+function case_management_form($node, $form_state) {
+  return node_content_form($node, $form_state);
+}
+ 
+/** 
+ * Implements hook_node_info to set up three new nodes:
+ * Event, Meeting and Mediation case
+ */
+function case_management_node_info() {
+  return array(
+    'case_management_event' => array(
+      'name' => t('Event'),
+      'description' => t('An event of interest to Mediation Bucks mediators.'),
+      'base' => 'case_management',
+      'title_label' => t('Event title'),
+      'has_title' => TRUE,
+      'locked' => FALSE,
+    ),
+    'case_management_meeting' => array(
+      'name' => t('Meeting'),
+      'description' => t('A mediation casework meeting.'),
+      'base' => 'case_management',
+      'title_label' => t('Title'),
+      'has_title' => TRUE,
+      'locked' => FALSE,
+    ),
+    'case_management_case' => array(
+      'name' => t('Mediation case'),
+      'description' => t('Record of a case accepted for mediation.'),
+      'base' => 'case_management',
+      'title_label' => t('Title'),
+      'has_title' => TRUE,
+      'locked' => FALSE,
+    )
+  );
+}
+
+/**
+ * Implements hook_node_type_insert().
+ * Adds additional fields to the three new content types.
+ *
+ */
+function case_management_node_type_insert($content_type) {
+  // include the two files containing definitions for newly defined fields and field instances 
+  module_load_include('inc', 'case_management', 'includes/fields');
+  module_load_include('inc', 'case_management', 'includes/instances');
+  
+  // Specify titles for the body field, weight values for the body field 
+  // and variable values for the default save options for the respective content types
+  
+    
+  if ($content_type->type == 'case_management_event' || 
+    $content_type->type == 'case_management_meeting' || 
+    $content_type->type == 'case_management_case' ) {
+	switch ($content_type->type) {
+	  case 'case_management_event':
+	    $body_name = t('Description');
+		$weight = '2';
+        variable_set('comment_case_management_event', "1");
+        variable_set('menu_options_case_management_event', array('navigation'));
+        variable_set('menu_parent_case_management_event', 'navigation:0');
+        variable_set('node_preview_case_management_event', '1');
+		variable_set('node_options_case_management_event', array());
+        variable_set('node_submitted_case_management_event', 0);
+	    break;
+	   case 'case_management_meeting':
+	    $body_name = t('Arrangements');
+		$weight = '3';
+        variable_set('comment_case_management_meeting', "1");
+        variable_set('menu_options_case_management_meeting', array('navigation'));
+        variable_set('menu_parent_case_management_meeting', 'navigation:0');
+        variable_set('node_preview_case_management_meeting', '1');
+		variable_set('node_options_case_management_meeting', array());
+        variable_set('node_submitted_case_management_meeting', 0);
+	    break;
+	  case 'case_management_case':
+	    $body_name = t('Summary of dispute');
+		$weight = '4';
+        variable_set('comment_case_management_case', "1");
+        variable_set('menu_options_case_management_case', array('navigation'));
+        variable_set('menu_parent_case_management_case', 'navigation:0');
+        variable_set('node_preview_case_management_case', '1');
+		variable_set('node_options_case_management_case', array());
+        variable_set('node_submitted_case_management_case', 0);
+	    break; 
+	}
+    // Set up the body field for the current content type with the correct weight for its intended position in the field list and default values where not specified
+    $body_instance = node_add_body_field($content_type, $body_name);
+	$body_instance['widget'] = array(
+	  'weight' => $weight
+	);
+	$body_instance['display'] = array(
+      'default' => array(
+	    'weight' => $weight
+	  ),
+	  'teaser' => array(
+	    'weight' => $weight
+	  ),
+	);
+
+    // Save the body field instance.
+    field_update_instance($body_instance);
+
+    // Create all the new fields required for the current content type using the helper function _case_management_installed_fields
+    foreach (_case_management_installed_fields($content_type->type) as $field) {
+      if (!field_info_field($field['field_name'])) {
+        field_create_field($field);
+	  }
+    }
+
+    // Attach instances of the fields we are adding to this content type using the helper function _case_management_installed_instances
+    foreach (_case_management_installed_instances($content_type->type) as $instance) {
+      if (!field_info_instance('node', $instance['field_name'], $instance['bundle'])) {
+        field_create_instance($instance);
+	  }
+    }
+  }
+  node_types_rebuild();
+}
+
+/**
+ *  Implements hook_views_api to make Views api functions available
+ */
+function case_management_views_api() {
+  return array ('api' => 3.0);
+}
+
+function case_management_test() {
+ 
+  return array();
+}
+
+/**
+ *  Function for indirect creation of a taxonomy handler object
+ */
+function mediation_taxonomy_handler_factory($vocab_name) {
+  module_load_include('inc', 'case_management', 'includes/mediation_taxonomy_handler');
+  return new MediationTaxonomyHandler($vocab_name);
+}
+
+/**
+ *  Function for indirect creation of a taxonomy loader object
+ */
+function case_management_taxonomy_loader_factory() {
+  module_load_include('inc', 'case_management', 'includes/case_management_taxonomy');
+  return new CaseManagementTaxonomyLoader();
+}
+
+
